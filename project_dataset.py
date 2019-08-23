@@ -15,16 +15,6 @@ class ProjectDataset(Dataset):
         self.samples_frame = pd.read_csv(file_path, sep='\t')
         self.labels = []
         self.sentences = []
-        # with open(file_path, encoding='utf-8') as file:
-        #     reader = csv.reader((x.replace('\0', '') for x in file), delimiter='\t')
-        #     for i, row in enumerate(reader):
-        #         id = int(row[0])
-        #         instance = row[1]
-        #         indices = torch.tensor(self.class_idx[id])
-        #         one_hot_id = torch.nn.functional.one_hot(indices, num_of_classes)
-        #         self.labels.append(one_hot_id)
-        #         self.sentences.append(instance)
-        # print("Total instance: %d" % (len(self.sentences)))
         return
 
     def __len__(self):
@@ -38,8 +28,8 @@ class ProjectDataset(Dataset):
     def __getitem__(self, idx):
         id, sentnece = self.samples_frame.iloc[idx, 0:].values
         indices = torch.tensor(self.class_idx[id])
-        one_hot_id = torch.nn.functional.one_hot(indices, self.num_of_classes)
-        return sentnece, one_hot_id
+        sentnece = str(sentnece)
+        return sentnece, indices
 
 
 if __name__ == '__main__':
@@ -49,11 +39,11 @@ if __name__ == '__main__':
     print(len(train_set))
     # dev_set = ProjectDataset("data/v1/dev_dataloader")
     train_loaders = DataLoader(train_set,
-                               batch_size=1,
+                               batch_size=256,
                                shuffle=False,
                                pin_memory=True,
-                               num_workers=1)
+                               num_workers=4)
 
-    for i, (embed, labels) in enumerate(train_loaders):
-        print(embed, labels)
-        continue
+    for i, (sentences, labels) in enumerate(train_loaders):
+        sentences = list(sentences)
+        print(len(sentences), labels.shape)
