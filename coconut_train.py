@@ -4,13 +4,13 @@ import torch
 import torch.nn as nn
 from tqdm import tqdm
 from pytorch_transformers import BertTokenizer, BertModel, BertForSequenceClassification
-from models.coconut_model import CoconutModel
-from models.coconut_extract_2 import CoconutFeatureExtract
+from models.coconut_model_v2 import CoconutModel
+from models.coconut_extract_v2 import CoconutFeatureExtract
 from project_dataset import ProjectDataset
 from torch.utils.data import DataLoader
 from utils.utils import AverageMeter
 from center_loss import CenterLoss
-
+from radam import RAdam
 
 parser = argparse.ArgumentParser(description='COMP90051 Project1')
 # Training
@@ -25,7 +25,7 @@ parser.add_argument('--default_bert', action='store_true', default=False)
 parser.add_argument('--features_extract', action='store_true', default=False)
 parser.add_argument('--feature_size', type=int, default=192)
 parser.add_argument('--center_loss_alpha', type=float, default=0.1)
-parser.add_argument('--center_loss_lr', type=float, default=0.5)
+parser.add_argument('--center_loss_lr', type=float, default=0.01)
 
 # FilePath
 parser.add_argument('--check_point_path', type=str, default="checkpoints/")
@@ -35,7 +35,7 @@ parser.add_argument('--dev_set_file_path', type=str, default="data/v1/dev_set_v1
 parser.add_argument('--idx_file_path', type=str, default="data/v1/v1_idx.pickle")
 parser.add_argument('--log_every', type=int, default=200)
 
-args = parser.parse_args()
+args = parser.parse_known_args()[0]
 
 if torch.cuda.is_available():
     device = torch.device('cuda')
@@ -44,6 +44,8 @@ else:
 
 
 GLOBAL_STEP = 0
+CURRENT_BEST = 0
+CURRENT_ACC = 0
 
 
 def get_data_loader():
@@ -75,7 +77,7 @@ def get_data_loader():
 
 
 def save_mode(epoch, model, optimizer, center_loss=None):
-    global GLOBAL_STEP
+    global GLOBAL_STEP, CURRENT_BEST, CURRENT_ACC
     filename = args.check_point_path + args.model_version_string + '.pth'
     center_loss_state_dict = None
     if center_loss is not None:
@@ -86,20 +88,30 @@ def save_mode(epoch, model, optimizer, center_loss=None):
         "model_state_dict": model.state_dict(),
         "optimizer_state_dict": optimizer.state_dict(),
         "center_loss_state_dict": center_loss_state_dict,
-        "global_step": GLOBAL_STEP
+        "global_step": GLOBAL_STEP,
+        "CURRENT_BEST": CURRENT_BEST
     }
     torch.save(payload, filename)
     print('\n%s Saved! \n' % (filename))
 
+    if CURRENT_ACC > CURRENT_BEST:
+        CURRENT_BEST = CURRENT_ACC
+        filename = args.check_point_path + args.model_version_string + '_best.pth'
+        torch.save(payload, filename)
+        print('\n%s Saved! \n' % (filename))
+
+    return
+
 
 def load_model(model, optimizer, center_loss=None):
-    global GLOBAL_STEP
+    global GLOBAL_STEP, CURRENT_BEST
     filename = args.check_point_path + args.model_version_string + '.pth'
     checkpoints = torch.load(filename)
     epoch = checkpoints["epoch"]
     model.load_state_dict(checkpoints["model_state_dict"])
     optimizer.load_state_dict(checkpoints["optimizer_state_dict"])
     GLOBAL_STEP = checkpoints["global_step"]
+    CURRENT_BEST = checkpoints["CURRENT_BEST"]
     if center_loss is not None:
         center_loss.load_state_dict(checkpoints["center_loss_state_dict"])
     print('%s Loaded!' % (filename))
@@ -144,6 +156,7 @@ def prepare_data_for_coconut_model(batch, bert_model, tokenizer):
 
 
 def eval_model(epoch, model, loader, bert_model, tokenizer):
+    global CURRENT_ACC
     model.eval()
     model.to(device)
     if not args.default_bert:
@@ -179,6 +192,7 @@ def eval_model(epoch, model, loader, bert_model, tokenizer):
                       '\ttime=%.2fit/s' % (1. / used_time)
             tqdm.write(display)
     print("Final Eval Acc: %.4f\n" % (acc_meter.avg))
+    CURRENT_ACC = acc_meter.avg
     return
 
 
@@ -273,11 +287,11 @@ def train():
         coconut_model = coconut_model.cuda()
         bert_model = bert_model.cuda()
 
-    optimizer = torch.optim.Adam(params=params,
-                                 lr=args.lr,
-                                 betas=(0.0, 0.999),
-                                 eps=1e-3,
-                                 weight_decay=args.l2_reg)
+    optimizer = RAdam(params=params,
+                      lr=args.lr,
+                      betas=(0.0, 0.999),
+                      eps=1e-3,
+                      weight_decay=args.l2_reg)
     starting_epoch = 0
 
     if args.resume:
