@@ -2,7 +2,7 @@ import pickle
 import torch
 import pandas as pd
 from torch.utils.data import Dataset, DataLoader
-torch.multiprocessing.set_start_method('spawn', force=True)
+# torch.multiprocessing.set_start_method('spawn', force=True)
 
 
 class ProjectDataset(Dataset):

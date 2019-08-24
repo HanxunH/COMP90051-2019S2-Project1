@@ -3,11 +3,14 @@ import time
 import torch
 import torch.nn as nn
 from tqdm import tqdm
-from pytorch_transformers import BertTokenizer, BertModel, BertForSequenceClassification, BertConfig
+from pytorch_transformers import BertTokenizer, BertModel, BertForSequenceClassification
 from models.coconut_model import CoconutModel
+from models.coconut_extract_2 import CoconutFeatureExtract
 from project_dataset import ProjectDataset
 from torch.utils.data import DataLoader
 from utils.utils import AverageMeter
+from center_loss import CenterLoss
+
 
 parser = argparse.ArgumentParser(description='COMP90051 Project1')
 # Training
@@ -19,6 +22,10 @@ parser.add_argument('--epoch', type=int, default=310)
 parser.add_argument('--grad_clip_bound', type=float, default=5.0)
 parser.add_argument('--batch_size', type=int, default=128)
 parser.add_argument('--default_bert', action='store_true', default=False)
+parser.add_argument('--features_extract', action='store_true', default=False)
+parser.add_argument('--feature_size', type=int, default=192)
+parser.add_argument('--center_loss_alpha', type=float, default=0.1)
+parser.add_argument('--center_loss_lr', type=float, default=0.5)
 
 # FilePath
 parser.add_argument('--check_point_path', type=str, default="checkpoints/")
@@ -67,21 +74,25 @@ def get_data_loader():
     return data_loaders
 
 
-def save_mode(epoch, model, optimizer):
+def save_mode(epoch, model, optimizer, center_loss=None):
     global GLOBAL_STEP
     filename = args.check_point_path + args.model_version_string + '.pth'
+    center_loss_state_dict = None
+    if center_loss is not None:
+        center_loss_state_dict = center_loss.state_dict()
     payload = {
         "epoch": epoch + 1,
         "args": args,
         "model_state_dict": model.state_dict(),
         "optimizer_state_dict": optimizer.state_dict(),
+        "center_loss_state_dict": center_loss_state_dict,
         "global_step": GLOBAL_STEP
     }
     torch.save(payload, filename)
-    print('\n %s Saved! \n' % (filename))
+    print('\n%s Saved! \n' % (filename))
 
 
-def load_model(model, optimizer):
+def load_model(model, optimizer, center_loss=None):
     global GLOBAL_STEP
     filename = args.check_point_path + args.model_version_string + '.pth'
     checkpoints = torch.load(filename)
@@ -89,7 +100,10 @@ def load_model(model, optimizer):
     model.load_state_dict(checkpoints["model_state_dict"])
     optimizer.load_state_dict(checkpoints["optimizer_state_dict"])
     GLOBAL_STEP = checkpoints["global_step"]
-    return epoch, model, optimizer
+    if center_loss is not None:
+        center_loss.load_state_dict(checkpoints["center_loss_state_dict"])
+    print('%s Loaded!' % (filename))
+    return epoch, model, optimizer, center_loss
 
 
 def prepare_data_for_coconut_model(batch, bert_model, tokenizer):
@@ -98,7 +112,7 @@ def prepare_data_for_coconut_model(batch, bert_model, tokenizer):
     tokens_tensor_batch = []
     segments_tensors_batch = []
     for item in sentences:
-        tokenized_text = tokenizer.tokenize(item)
+        tokenized_text = tokenizer.tokenize(item.lower())
 
         if len(tokenized_text) > 512:
             # TODO: Drop Long Sequence for now
@@ -122,14 +136,18 @@ def prepare_data_for_coconut_model(batch, bert_model, tokenizer):
     with torch.no_grad():
         bert_model.to(device)
         outputs = bert_model(tokens_tensor, token_type_ids=segments_tensors)
-        # print(outputs[0].shape, outputs[1].shape)
-    return outputs[0], labels
+
+    if torch.cuda.is_available() and labels is not None:
+        labels = labels.cuda()
+
+    return outputs, labels
 
 
 def eval_model(epoch, model, loader, bert_model, tokenizer):
+    model.eval()
+    model.to(device)
     if not args.default_bert:
         model.batch(True)
-    model.eval()
     acc_meter = AverageMeter()
     loss_meter = AverageMeter()
     print('=' * 20 + "Model Eval" + '=' * 20)
@@ -137,14 +155,12 @@ def eval_model(epoch, model, loader, bert_model, tokenizer):
         start = time.time()
 
         input, labels = prepare_data_for_coconut_model(batch, bert_model, tokenizer)
-        model.batch(True)
-        if torch.cuda.is_available():
-            input = input.cuda()
-            labels = labels.cuda()
 
         with torch.no_grad():
             if args.default_bert:
                 pred = model(input)[0]
+            elif args.features_extract:
+                pred = model(input)[1]
             else:
                 pred = model(input)
             loss = nn.CrossEntropyLoss()(pred, labels)
@@ -166,11 +182,12 @@ def eval_model(epoch, model, loader, bert_model, tokenizer):
     return
 
 
-def train_model(epoch, model, optimizer, loader, bert_model, tokenizer):
+def train_model(epoch, model, optimizer, loader, bert_model, tokenizer, center_loss=None):
     global GLOBAL_STEP
 
     train_acc_meter = AverageMeter()
     loss_meter = AverageMeter()
+    c_loss_meter = AverageMeter()
     model.train()
     model.to(device)
     if not args.default_bert:
@@ -182,20 +199,27 @@ def train_model(epoch, model, optimizer, loader, bert_model, tokenizer):
         start = time.time()
 
         input, labels = prepare_data_for_coconut_model(batch, bert_model, tokenizer)
-        if torch.cuda.is_available():
-            input = input.cuda()
-            labels = labels.cuda()
-
         optimizer.zero_grad()
         model.zero_grad()
 
         if args.default_bert:
             pred = model(input)[0]
+            loss = nn.CrossEntropyLoss()(pred, labels)
+            loss.backward()
+        elif args.features_extract:
+            feature, pred = model(input)
+            ce_loss = nn.CrossEntropyLoss()(pred, labels)
+            c_loss = center_loss(feature, labels) * args.center_loss_alpha
+            loss = ce_loss + c_loss
+            loss.backward()
+            for param in center_loss.parameters():
+                param.grad.data *= (args.center_loss_lr / (args.center_loss_alpha * args.lr))
+            c_loss_meter.update(c_loss.item())
         else:
             pred = model(input)
+            loss = nn.CrossEntropyLoss()(pred, labels)
+            loss.backward()
 
-        loss = nn.CrossEntropyLoss()(pred, labels)
-        loss.backward()
         torch.nn.utils.clip_grad_value_(model.parameters(), args.grad_clip_bound)
         optimizer.step()
 
@@ -204,34 +228,52 @@ def train_model(epoch, model, optimizer, loader, bert_model, tokenizer):
         loss_meter.update(loss.item())
         end = time.time()
         used_time = end - start
-        GLOBAL_STEP += 1
 
-        if (i) % args.log_every == 0:
+        if (GLOBAL_STEP) % args.log_every == 0:
             lr = optimizer.param_groups[0]['lr']
             display = 'epoch=' + str(epoch) + \
                       '\tglobal_step=%d' % (GLOBAL_STEP) + \
                       '\tloss=%.6f' % (loss_meter.val) + \
-                      '\tloss_avg=%.6f' % (loss_meter.avg) + \
-                      '\tlr=%.6f' % (lr) + \
+                      '\tloss_avg=%.6f' % (loss_meter.avg)
+            if args.features_extract:
+                display = display + '\tc_loss_avg=%.6f' % (c_loss_meter.avg)
+            display = display + '\tlr=%.6f' % (lr) + \
                       '\tacc=%.4f' % (train_acc_meter.val) + \
                       '\tacc_avg=%.4f' % (train_acc_meter.avg) + \
                       '\ttime=%.2fit/s' % (1. / used_time)
             tqdm.write(display)
+        GLOBAL_STEP += 1
+
     return
 
 
 def train():
     # Init Training
     tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
-    bert_model = BertModel.from_pretrained('bert-base-uncased')
+    bert_model = BertModel.from_pretrained('bert-base-uncased', output_hidden_states=True, output_attentions=True)
     bert_model.eval()
+    center_loss = None
 
     data_loaders = get_data_loader()
     if args.default_bert:
         coconut_model = BertForSequenceClassification.from_pretrained('bert-base-uncased', num_labels=args.num_of_classes)
+        params = list(coconut_model.parameters())
+    elif args.features_extract:
+        coconut_model = CoconutFeatureExtract(num_of_classes=args.num_of_classes,
+                                              feature_size=args.feature_size)
+        center_loss = CenterLoss(num_classes=args.num_of_classes,
+                                 feat_dim=args.feature_size,
+                                 use_gpu=torch.cuda.is_available())
+        params = list(coconut_model.parameters()) + list(center_loss.parameters())
     else:
         coconut_model = CoconutModel()
-    optimizer = torch.optim.Adam(params=coconut_model.parameters(),
+        params = list(coconut_model.parameters())
+
+    if torch.cuda.is_available():
+        coconut_model = coconut_model.cuda()
+        bert_model = bert_model.cuda()
+
+    optimizer = torch.optim.Adam(params=params,
                                  lr=args.lr,
                                  betas=(0.0, 0.999),
                                  eps=1e-3,
@@ -239,11 +281,10 @@ def train():
     starting_epoch = 0
 
     if args.resume:
-        starting_epoch, coconut_model, optimizer = load_model(model=coconut_model,
-                                                              optimizer=optimizer)
-
-    if torch.cuda.is_available():
-        coconut_model = coconut_model.cuda()
+        checkpoints = load_model(model=coconut_model,
+                                 optimizer=optimizer,
+                                 center_loss=center_loss)
+        (starting_epoch, coconut_model, optimizer, center_loss) = checkpoints
 
     for epoch in range(starting_epoch, args.epoch):
         train_model(epoch=epoch,
@@ -251,7 +292,8 @@ def train():
                     optimizer=optimizer,
                     loader=data_loaders["train_loader"],
                     tokenizer=tokenizer,
-                    bert_model=bert_model)
+                    bert_model=bert_model,
+                    center_loss=center_loss)
         eval_model(epoch=epoch,
                    model=coconut_model,
                    loader=data_loaders["dev_loader"],
@@ -259,7 +301,8 @@ def train():
                    bert_model=bert_model)
         save_mode(epoch=epoch,
                   model=coconut_model,
-                  optimizer=optimizer)
+                  optimizer=optimizer,
+                  center_loss=center_loss)
     return
 
 

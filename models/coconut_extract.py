@@ -2,19 +2,21 @@
 import torch.nn as nn
 
 
-class CoconutModel(nn.Module):
+class CoconutFeatureExtract(nn.Module):
     def __init__(self,
                  input_size=768,
                  lstm_size=64,
                  lstm_num_layers=1,
                  drop_out_rate=0.1,
-                 num_of_classes=9292):
-        super(CoconutModel, self).__init__()
+                 num_of_classes=9292,
+                 feature_size=192):
+        super(CoconutFeatureExtract, self).__init__()
         self.input_size = input_size
         self.lstm_size = lstm_size
         self.lstm_num_layers = lstm_num_layers
         self.drop_out_rate = drop_out_rate
         self.num_of_classes = num_of_classes
+        self.feature_size = feature_size
         self.use_batch = False
         self.create_params()
         return
@@ -24,7 +26,8 @@ class CoconutModel(nn.Module):
                             hidden_size=self.lstm_size,
                             num_layers=self.lstm_num_layers)
         self.dropout = nn.Dropout(self.drop_out_rate)
-        self.fc1 = nn.Linear(self.lstm_size, self.num_of_classes, bias=False)
+        self.features = nn.Linear(self.lstm_size, self.feature_size)
+        self.classfiy = nn.Linear(self.feature_size, self.num_of_classes, bias=False)
         self.reset_params()
         return
 
@@ -48,7 +51,8 @@ class CoconutModel(nn.Module):
             lstm_out, (last_hidden_state, last_cell_state) = self.lstm(input_tensor[0])
         else:
             lstm_out, (last_hidden_state, last_cell_state) = self.lstm(input_tensor[0].view(input_tensor[0].size(1), 1, -1))
-        out = self.dropout(last_hidden_state)
-        out = self.fc1(out)
-        out = out.view(-1, self.num_of_classes)
-        return out
+        out = last_hidden_state.view(-1, self.lstm_size)
+        features = self.features(out)
+        out = self.dropout(features)
+        out = self.classfiy(out)
+        return features, out
