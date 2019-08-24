@@ -39,17 +39,16 @@ class FeatureExtract:
     def get_features(self, sentences):
         embeds, _ = prepare_data_for_coconut_model((sentences, None), self.bert_model, self.tokenizer)
 
-        if torch.cuda.is_available():
-            embeds = embeds.cuda()
-
         with torch.no_grad():
             self.model.eval()
             features = self.model(embeds)[0]
 
+        if torch.cuda.is_available():
+            return features.cpu().detach().numpy()
         return features.numpy()
 
 
 if __name__ == '__main__':
     test_model = FeatureExtract()
     feature = test_model.get_features(["Sibername Custom Web Site Design News Release"])
-    print(type(feature), feature.shape)
+    print(feature)

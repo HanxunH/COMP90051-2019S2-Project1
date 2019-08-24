@@ -137,7 +137,7 @@ def prepare_data_for_coconut_model(batch, bert_model, tokenizer):
         bert_model.to(device)
         outputs = bert_model(tokens_tensor, token_type_ids=segments_tensors)
 
-    if torch.cuda.is_available():
+    if torch.cuda.is_available() and labels is not None:
         labels = labels.cuda()
 
     return outputs, labels
