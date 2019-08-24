@@ -48,9 +48,9 @@ class CoconutFeatureExtract(nn.Module):
 
     def forward(self, input_tensor):
         if self.use_batch:
-            lstm_out, (last_hidden_state, last_cell_state) = self.lstm(input_tensor)
+            lstm_out, (last_hidden_state, last_cell_state) = self.lstm(input_tensor[0])
         else:
-            lstm_out, (last_hidden_state, last_cell_state) = self.lstm(input_tensor.view(input_tensor.size(1), 1, -1))
+            lstm_out, (last_hidden_state, last_cell_state) = self.lstm(input_tensor[0].view(input_tensor[0].size(1), 1, -1))
         out = last_hidden_state.view(-1, self.lstm_size)
         features = self.features(out)
         out = self.dropout(features)

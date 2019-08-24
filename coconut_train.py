@@ -5,7 +5,7 @@ import torch.nn as nn
 from tqdm import tqdm
 from pytorch_transformers import BertTokenizer, BertModel, BertForSequenceClassification
 from models.coconut_model import CoconutModel
-from models.coconut_extract import CoconutFeatureExtract
+from models.coconut_extract_2 import CoconutFeatureExtract
 from project_dataset import ProjectDataset
 from torch.utils.data import DataLoader
 from utils.utils import AverageMeter
@@ -112,7 +112,7 @@ def prepare_data_for_coconut_model(batch, bert_model, tokenizer):
     tokens_tensor_batch = []
     segments_tensors_batch = []
     for item in sentences:
-        tokenized_text = tokenizer.tokenize(item)
+        tokenized_text = tokenizer.tokenize(item.lower())
 
         if len(tokenized_text) > 512:
             # TODO: Drop Long Sequence for now
@@ -136,8 +136,11 @@ def prepare_data_for_coconut_model(batch, bert_model, tokenizer):
     with torch.no_grad():
         bert_model.to(device)
         outputs = bert_model(tokens_tensor, token_type_ids=segments_tensors)
-        # print(outputs[0].shape, outputs[1].shape)
-    return outputs[0], labels
+
+    if torch.cuda.is_available():
+        labels = labels.cuda()
+
+    return outputs, labels
 
 
 def eval_model(epoch, model, loader, bert_model, tokenizer):
@@ -152,9 +155,6 @@ def eval_model(epoch, model, loader, bert_model, tokenizer):
         start = time.time()
 
         input, labels = prepare_data_for_coconut_model(batch, bert_model, tokenizer)
-        if torch.cuda.is_available():
-            input = input.cuda()
-            labels = labels.cuda()
 
         with torch.no_grad():
             if args.default_bert:
@@ -199,10 +199,6 @@ def train_model(epoch, model, optimizer, loader, bert_model, tokenizer, center_l
         start = time.time()
 
         input, labels = prepare_data_for_coconut_model(batch, bert_model, tokenizer)
-        if torch.cuda.is_available():
-            input = input.cuda()
-            labels = labels.cuda()
-
         optimizer.zero_grad()
         model.zero_grad()
 
@@ -254,7 +250,7 @@ def train_model(epoch, model, optimizer, loader, bert_model, tokenizer, center_l
 def train():
     # Init Training
     tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
-    bert_model = BertModel.from_pretrained('bert-base-uncased')
+    bert_model = BertModel.from_pretrained('bert-base-uncased', output_hidden_states=True, output_attentions=True)
     bert_model.eval()
     center_loss = None
 
@@ -275,6 +271,7 @@ def train():
 
     if torch.cuda.is_available():
         coconut_model = coconut_model.cuda()
+        bert_model = bert_model.cuda()
 
     optimizer = torch.optim.Adam(params=params,
                                  lr=args.lr,
