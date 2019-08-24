@@ -1,0 +1,69 @@
+[I 11:36:00.983 NotebookApp] The port 8888 is already in use, trying another port.
+[I 11:36:01.007 NotebookApp] [jupyter_nbextensions_configurator] enabled 0.4.1
+[I 11:36:01.007 NotebookApp] Serving notebooks from local directory: /Users/wenbin/Desktop/SML_Proj/COMP90051-Project1
+[I 11:36:01.007 NotebookApp] The Jupyter Notebook is running at:
+[I 11:36:01.007 NotebookApp] http://localhost:8889/?token=32d90fa738314316b1ca91b96105efeb82a9e475adb6f5dc
+[I 11:36:01.007 NotebookApp] Use Control-C to stop this server and shut down all kernels (twice to skip confirmation).
+[C 11:36:01.011 NotebookApp] 
+    
+    To access the notebook, open this file in a browser:
+        file:///Users/wenbin/Library/Jupyter/runtime/nbserver-94967-open.html
+    Or copy and paste one of these URLs:
+        http://localhost:8889/?token=32d90fa738314316b1ca91b96105efeb82a9e475adb6f5dc
+[I 11:36:07.606 NotebookApp] Creating new notebook in 
+[I 11:36:08.580 NotebookApp] Kernel started: 102c1177-46c4-4497-a37b-2b03af830416
+[W 11:36:08.825 NotebookApp] 404 GET /nbextensions/widgets/notebook/js/extension.js?v=20190824113600 (::1) 11.05ms referer=http://localhost:8889/notebooks/Untitled.ipynb?kernel_name=python3
+[I 11:36:09.305 NotebookApp] Adapting to protocol v5.1 for kernel 102c1177-46c4-4497-a37b-2b03af830416
+[I 11:38:08.521 NotebookApp] Saving file at /Untitled.ipynb
+[I 11:40:08.980 NotebookApp] Saving file at /Untitled.ipynb
+[I 11:42:08.519 NotebookApp] Saving file at /Untitled.ipynb
+[I 11:44:18.372 NotebookApp] Starting buffering for 102c1177-46c4-4497-a37b-2b03af830416:4c5470c494fd42a8bb8a762bca30083d
+[I 11:44:20.000 NotebookApp] Adapting to protocol v5.1 for kernel 102c1177-46c4-4497-a37b-2b03af830416
+[I 11:44:20.001 NotebookApp] Restoring connection for 102c1177-46c4-4497-a37b-2b03af830416:4c5470c494fd42a8bb8a762bca30083d
+[I 11:47:35.978 NotebookApp] Saving file at /Untitled.ipynb
+[W 11:50:06.640 NotebookApp] 404 GET /api/contents/SaveEmbeddings.ipynb?type=notebook&content=0&_=1566610568246 (::1): No such file or directory: SaveEmbeddings.ipynb
+[W 11:50:06.641 NotebookApp] No such file or directory: SaveEmbeddings.ipynb
+[W 11:50:06.641 NotebookApp] 404 GET /api/contents/SaveEmbeddings.ipynb?type=notebook&content=0&_=1566610568246 (::1) 1.45ms referer=http://localhost:8889/notebooks/Untitled.ipynb?kernel_name=python3
+[I 11:50:06.647 NotebookApp] Uploading file to /SaveEmbeddings.ipynb
+[I 11:50:08.639 NotebookApp] Starting buffering for 102c1177-46c4-4497-a37b-2b03af830416:4c5470c494fd42a8bb8a762bca30083d
+[I 11:50:21.013 NotebookApp] interrupted
+Serving notebooks from local directory: /Users/wenbin/Desktop/SML_Proj/COMP90051-Project1
+1 active kernel
+The Jupyter Notebook is running at:
+http://localhost:8889/?token=32d90fa738314316b1ca91b96105efeb82a9e475adb6f5dc
+Shutdown this notebook server (y/[n])? [I 11:50:22.954 NotebookApp] interrupted
+resuming operation...
+Serving notebooks from local directory: /Users/wenbin/Desktop/SML_Proj/COMP90051-Project1
+1 active kernel
+The Jupyter Notebook is running at:
+http://localhost:8889/?token=32d90fa738314316b1ca91b96105efeb82a9e475adb6f5dc
+Shutdown this notebook server (y/[n])? [C 11:50:23.146 NotebookApp] received signal 2, stopping
+[I 11:50:23.146 NotebookApp] Shutting down 1 kernel
+[C 11:50:23.281 NotebookApp] received signal 2, stopping
+[C 11:50:23.637 NotebookApp] received signal 2, stopping
+[C 11:50:23.754 NotebookApp] received signal 2, stopping
+[I 11:50:24.170 NotebookApp] Kernel shutdown: 102c1177-46c4-4497-a37b-2b03af830416
+[I 11:50:31.492 NotebookApp] The port 8888 is already in use, trying another port.
+[I 11:50:31.517 NotebookApp] [jupyter_nbextensions_configurator] enabled 0.4.1
+[I 11:50:31.518 NotebookApp] Serving notebooks from local directory: /Users/wenbin/Desktop/SML_Proj/COMP90051-Project1
+[I 11:50:31.518 NotebookApp] The Jupyter Notebook is running at:
+[I 11:50:31.518 NotebookApp] http://localhost:8889/?token=3b989d0844ac53116ee23b4ad8fc0b1cf50a3a803e8d94f6
+[I 11:50:31.518 NotebookApp] Use Control-C to stop this server and shut down all kernels (twice to skip confirmation).
+[C 11:50:31.524 NotebookApp] 
+    
+    To access the notebook, open this file in a browser:
+        file:///Users/wenbin/Library/Jupyter/runtime/nbserver-95112-open.html
+    Or copy and paste one of these URLs:
+        http://localhost:8889/?token=3b989d0844ac53116ee23b4ad8fc0b1cf50a3a803e8d94f6
+[I 11:50:38.659 NotebookApp] Kernel started: e4835741-8d67-4796-aa47-cacc04581ad2
+[W 11:50:38.971 NotebookApp] 404 GET /nbextensions/widgets/notebook/js/extension.js?v=20190824115031 (::1) 11.00ms referer=http://localhost:8889/notebooks/Untitled.ipynb
+[I 11:50:39.310 NotebookApp] Adapting to protocol v5.1 for kernel e4835741-8d67-4796-aa47-cacc04581ad2
+[I 11:50:41.726 NotebookApp] Starting buffering for e4835741-8d67-4796-aa47-cacc04581ad2:6dc3c2ccce67495a8cf9862b7bb638a6
+[I 11:50:43.404 NotebookApp] Kernel started: 32d1d3fa-5abb-46df-94c8-afeac9e4273e
+[W 11:50:43.641 NotebookApp] 404 GET /nbextensions/widgets/notebook/js/extension.js?v=20190824115031 (::1) 2.55ms referer=http://localhost:8889/notebooks/SaveEmbeddings.ipynb
+[I 11:50:44.139 NotebookApp] Adapting to protocol v5.1 for kernel 32d1d3fa-5abb-46df-94c8-afeac9e4273e
+[I 11:50:44.256 NotebookApp] Starting buffering for 32d1d3fa-5abb-46df-94c8-afeac9e4273e:6ce03bc8a8024a2b8039d6e840c5e52c
+[I 11:50:49.584 NotebookApp] Kernel shutdown: e4835741-8d67-4796-aa47-cacc04581ad2
+[W 11:50:49.587 NotebookApp] delete /Untitled.ipynb
+[I 11:50:51.467 NotebookApp] Discarding 11 buffered messages for 32d1d3fa-5abb-46df-94c8-afeac9e4273e:6ce03bc8a8024a2b8039d6e840c5e52c
+[I 11:50:51.779 NotebookApp] Kernel shutdown: 32d1d3fa-5abb-46df-94c8-afeac9e4273e
