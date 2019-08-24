@@ -1,5 +1,5 @@
 import torch
-from models.coconut_extract import CoconutFeatureExtract
+from models.coconut_extract_v2 import CoconutFeatureExtract
 from pytorch_transformers import BertTokenizer, BertModel
 from coconut_train import prepare_data_for_coconut_model
 
@@ -8,7 +8,7 @@ class FeatureExtract:
     def __init__(self,
                  num_of_classes=1132,
                  feature_size=192,
-                 checkpoints_path="checkpoints/coconut_extract_model_v1.pth"):
+                 checkpoints_path="checkpoints/coconut_extract_model_v2.pth"):
         self.num_of_classes = num_of_classes
         self.feature_size = feature_size
         self.checkpoints_path = checkpoints_path
