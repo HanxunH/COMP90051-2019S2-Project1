@@ -1,4 +1,26 @@
+<<<<<<< HEAD
 .DS_Store
 data/*
 .ipynb_checkpoints/*
 checkpoints/*
+=======
+nohup.out
+Train_pair/paired_sentences_dev.csv
+Train_pair/paired_sentences_train.csv
+
+.ipynb_checkpoints/BERT_MLP-checkpoint.ipynb
+.ipynb_checkpoints/GeneratePair-checkpoint.ipynb
+
+data/BERT_encoding.zip
+data/BERT_encoding/
+data/paired_sentences.csv
+best_weights_tough_head.hdf5
+
+.ipynb_checkpoints/
+data/BERT_encoding.zip
+data/BERT_encoding/
+data/v1_7
+Train_pair/*.txt
+data/
+
+>>>>>>> cwbBranch
